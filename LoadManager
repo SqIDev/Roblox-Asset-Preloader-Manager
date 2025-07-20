@@ -1,0 +1,17 @@
+--[[
+StarterPlayerScripts/LoadManager
+
+Insert this inside of a local script, inside StarterPlayer > StarterPlayerScripts
+Refer to the first part of the script, within the same repository, to understand what this script calls.
+--]]
+
+print("Client is starting. Initializing preloader...")
+
+-- Correct path now that the module is in ReplicatedStorage
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local preload_MODULE = require(ReplicatedStorage:WaitForChild("AssetPreloaderManager"):WaitForChild('Preloader'))
+
+-- Calling assets manager ASAP
+preload_MODULE.loadGameAssets()
+
+print("Client initialization complete.") --If you see this when the game is loaded, everything works perfectly.
