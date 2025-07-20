@@ -1,0 +1,72 @@
+--[[
+ReplicatedStorage/Preloader - Aggressive System with a "SACRIFICIAL CLONE"
+
+This is a MODULE. Must be called using require(POSITION OF THIS MODULE) inside a local or server script;
+MUST be dragged inside the ReplicatedStorage (The module itself).
+
+Refer to the second part of the script, within the same repository, to understand how to call and run this script.
+--]]
+
+local ContentProvider = game:GetService("ContentProvider")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService") -- NUOVO
+
+local Preloader = {}
+
+--IMPORTANT ; Change all the various folders inside to iterate, in order to load items/models sequentially.
+function Preloader.loadGameAssets()
+	local assetsToLoad = {}
+	local weaponsFolder = ReplicatedStorage:WaitForChild("Weapons")
+
+	for _, asset in ipairs(weaponsFolder:GetChildren()) do
+			-- Check if: a tool or model, for security reasons (Does insert if a model or tool)
+		if asset:IsA("Model") or asset:IsA("Tool") then
+			table.insert(assetsToLoad, asset)
+		end
+	end
+
+	if #assetsToLoad == 0 then
+		print("No assets found to preload.")
+		return
+	end
+
+	-- 1 - PRELOADING
+	print("Preloading " .. #assetsToLoad .. " assets (Pass 1/2)...")
+	local success, err = pcall(function()
+		ContentProvider:PreloadAsync(assetsToLoad)
+	end)
+
+	if not success then
+		warn("Asset preloading (Pass 1) failed: " .. tostring(err))
+		-- Don't stop. If cloning fails, attempting a second time.
+	else
+		print("Standard preloading complete.")
+	end
+
+	-- 2 - Cloning temp model to give time for the rendering 
+	print("Forcing render preparation (Pass 2/2)...")
+	local camera = game.Workspace.CurrentCamera
+
+	for _, asset in ipairs(assetsToLoad) do
+		-- Create a disposable clone
+		local sacrificialClone = asset:Clone()
+
+		-- Set its CFrame very far away or behind the camera so that it cannot be seen.
+		sacrificialClone:SetPrimaryPartCFrame(camera.CFrame * CFrame.new(0, 0, 10000))
+
+    -- Parenting in the camera. This is the CRUCIAL step.
+    -- Force the rendering engine to process the object.
+	
+		sacrificialClone.Parent = camera
+
+		-- Wait one single frame for the engine
+		RunService.Heartbeat:Wait()
+
+		-- Immediately destroy the clone. Its work is over.
+		sacrificialClone:Destroy()
+	end
+
+	print("Asset preparation complete! Game should be smooth.")
+end
+
+return Preloader
